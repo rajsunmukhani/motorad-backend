@@ -1,42 +1,80 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { nanoid } = import('nanoid');
+
 
 const userSchema = mongoose.Schema({
-    email : {
-        type : String,
-        unique : true,
-        required : true,
-        match : [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Please fill a valid email address']
+    email: {
+        type: String,
+        unique: true,
+        required: true,
+        match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Please fill a valid email address']
     },
-    password : {
-        type : String,
-        select : false,
-        minLength : [6, 'Password Length should contain at least 6 characters'],
-        maxLength : [15, 'Password Length should not be more than 15 characters'],
+    password: {
+        type: String,
+        select: false,
+        minLength: [6, 'Password Length should contain at least 6 characters'],
+        maxLength: [15, 'Password Length should not be more than 15 characters'],
     },
-    username : {
-        type : String,
-        required : [true, 'First Name is required!'],
-        minLength : [2, 'First name should have at least 2 characters'],
-        maxLength : [10, 'First name should have at most 10 characters']
+    username: {
+        type: String,
+        required: [true, 'First Name is required!'],
+        minLength: [2, 'First name should have at least 2 characters'],
+        maxLength: [10, 'First name should have at most 10 characters']
     },
-    avatar : {
-        type : Object,
-        default : {
-            fileID : '',
-            url : 'https://t3.ftcdn.net/jpg/05/87/76/66/360_F_587766653_PkBNyGx7mQh9l1XXPtCAq1lBgOsLl6xH.jpg'
+    avatar: {
+        type: Object,
+        default: {
+            fileID: '',
+            url: 'https://t3.ftcdn.net/jpg/05/87/76/66/360_F_587766653_PkBNyGx7mQh9l1XXPtCAq1lBgOsLl6xH.jpg'
         }
     },
     googleId: {
-        type: String, 
+        type: String,
         unique: true,
-        sparse: true 
+        sparse: true
     },
     displayName: {
         type: String // New field to store user's display name from Google
     },
+    creditCards: {
+        type: [
+            {
+                id: { // Unique ID for the card
+                    type: String,
+                    default: nanoid, // Automatically assign a unique ID using nanoid
+                },
+                cardNumber: {
+                    type: String,
+                    required: true,
+                    maxLength: [16, 'Card number should not exceed 16 digits'],
+                    minLength: [16, 'Card number should be 16 digits'],
+                },
+                cvv: {
+                    type: String,
+                    required: true,
+                    maxLength: [3, 'CVV should not exceed 3 digits'],
+                    minLength: [3, 'CVV should be 3 digits'],
+                },
+                expiryDate: {
+                    type: String,
+                    required: true, // Format: MM/YY
+                },
+                nameOnCard: {
+                    type: String,
+                    required: true,
+                },
+            },
+        ],
+        validate: [arrayLimit, '{PATH} exceeds the limit of 5'],
+        default: [],
+    },
 }, { timestamps: true });
+
+function arrayLimit(val) {
+    return val.length <= 5;
+}
 
 userSchema.pre('save', function() {
     if (!this.isModified('password')) {
@@ -54,8 +92,9 @@ userSchema.methods.genToken = function() {
     const token = jwt.sign(
     {
       id: this._id,
-      name: this.username, // Assuming username is the name you want to display
-      avatar: this.avatar, // Ensure avatar is part of your User model
+      name: this.username, 
+      avatar: this.avatar,
+      creditCards : this.creditCards
     },
     process.env.JWT_SECRET, // Your secret key for signing tokens
     { expiresIn: '1d' }

@@ -16,10 +16,10 @@ exports.isAuthenticated = catchAsyncErrors((req, res, next) => {
 
     // Verify the token
     try {
-        const { id } = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, process.env.JWT_SECRET); // Verify and decode the token
 
         // Attach the user ID to the request object
-        req.id = id;
+        req.user = { id: decoded.id }; // Use req.user for better readability
         next();
     } catch (err) {
         return next(new ErrorHandler("Invalid Token", 401));
