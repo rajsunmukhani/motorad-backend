@@ -6,16 +6,23 @@ const app = express();
 const logger = require('morgan');
 app.use(logger('tiny'));
 
-// //cookie-parser & express-session
-// const session = require('express-session');
-// const cookieparser = require('cookie-parser');
+//cookie-parser & express-session & passport
+const passport = require('passport');
+const session = require('express-session');
+const cookieparser = require('cookie-parser');
 
-// app.use(session({
-//     resave : true,
-//     saveUninitialized : true,
-//     secret : process.env.SESSION_SECRET
-// }))
-// app.use(cookieparser());
+app.use(passport.initialize());
+app.use(session({
+    resave : true,
+    saveUninitialized : true,
+    secret : process.env.SESSION_SECRET,
+    cookie: {
+        secure: false, // Use `true` when in production and using HTTPS
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000 // 1 day cookie expiration
+    }
+}))
+app.use(cookieparser());
 
 // //express fileupload
 // const upload = require('express-fileupload');
@@ -28,7 +35,7 @@ app.use(express.urlencoded({extended : false}));
 // CORS
 const cors = require('cors');
 app.use(cors({
-    origin : true,
+    origin: 'http://localhost:5173',
     credentials : true,
 }));
 

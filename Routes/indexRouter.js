@@ -1,14 +1,16 @@
 const express = require('express');
-const { signup, signin } = require('../Controller/indexController');
-const router = express();
+const { signup, signin, homepage, googleAuth, googleAuthCallback, saveToken } = require('../Controller/indexController');
+const { isAuthenticated } = require('../Middleware/Auth');
+const router = express.Router();
 
-router.post('/signin', signin );
+router.post('/signup', signup);  
+router.post('/signin', signin); 
+router.get('/auth/google', googleAuth);
+router.get('/auth/google/callback',googleAuthCallback );
+router.get('/auth/google/callback',googleAuthCallback );
 
-router.post('/signup', signup );
+router.get('/home', isAuthenticated, homepage); 
 
-// router.post('/home',isAuthenticated, );
-// router.get('/signout',isAuthenticated );
-// router.post('/user',isAuthenticated );
 
 
 module.exports = router;
