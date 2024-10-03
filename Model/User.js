@@ -36,20 +36,20 @@ const userSchema = mongoose.Schema({
         sparse: true
     },
     displayName: {
-        type: String // New field to store user's display name from Google
+        type: String 
     },
     creditCards: {
         type: [
             {
-                id: { // Unique ID for the card
+                id: { 
                     type: String,
-                    default: nanoid, // Automatically assign a unique ID using nanoid
+                    default: nanoid, 
                 },
                 cardNumber: {
                     type: String,
                     required: true,
-                    maxLength: [16, 'Card number should not exceed 16 digits'],
-                    minLength: [16, 'Card number should be 16 digits'],
+                    maxLength: [20, 'Card number should not exceed 16 digits'],
+                    minLength: [20, 'Card number should be 16 digits'],
                 },
                 cvv: {
                     type: String,
@@ -59,7 +59,7 @@ const userSchema = mongoose.Schema({
                 },
                 expiryDate: {
                     type: String,
-                    required: true, // Format: MM/YY
+                    required: true, 
                 },
                 nameOnCard: {
                     type: String,
@@ -96,7 +96,7 @@ userSchema.methods.genToken = function() {
       avatar: this.avatar,
       creditCards : this.creditCards
     },
-    process.env.JWT_SECRET, // Your secret key for signing tokens
+    process.env.JWT_SECRET, 
     { expiresIn: '1d' }
   );
   return token;

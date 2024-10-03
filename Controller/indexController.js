@@ -8,13 +8,11 @@ exports.signup = async (req, res, next) => {
     try {
         const { username, email, password } = req.body;
 
-        // Check if user already exists with the same email
         let existingUser = await User.findOne({ email });
         if (existingUser) {
             return next(new ErrorHandler('Email already registered', 400));
         }
 
-        // Create new user and save to database
         const user = new User({
             username,
             email,
@@ -22,11 +20,9 @@ exports.signup = async (req, res, next) => {
         });
         await user.save();
 
-        // Send token after successful signup
         sendToken(user, 201, res);
 
     } catch (error) {
-        // Catch any server errors and pass it to your error handler
         next(error);
     }
 };
@@ -41,8 +37,6 @@ exports.signin = catchAsyncErrors(async(req,res,next) => {
     if (!isMatch) {
         return next(new ErrorHandler('Wrong Credentials', 400));
     }
-
-    // Generate token and send to client
     sendToken(user, 200, res);
 });
 
@@ -64,20 +58,20 @@ exports.googleAuthCallback = catchAsyncErrors((req, res, next) => {
         failureRedirect: '/login' 
     }, async (err, user, info) => {
         if (err) {
-            return next(err); // Handle the error
+            return next(err)
         }
         if (!user) {
-            return res.redirect('/login'); // Redirect if user not found
+            return res.redirect('/login')
         }
 
         req.logIn(user, async (err) => { 
             if (err) {
-                return next(err); // Handle login error
+                return next(err)
             }
-            // Generate the JWT token
+
             const token = await user.genToken();
 
-            // Redirect to frontend and pass token in query params
+
             return res.redirect(`http://localhost:5173/home/${token}`);
         });
     })(req, res, next);
@@ -85,12 +79,9 @@ exports.googleAuthCallback = catchAsyncErrors((req, res, next) => {
 
 
 exports.addCard = catchAsyncErrors(async (req, res) => {
-    // console.log(req.body);
-    
     try {
       const { cardNumber, expiryDate, cvv, nameOnCard, bankName } = req.body;
   
-      // Assuming userId is obtained from authentication middleware
         const userId = req.user.id
   
       const user = await User.findById(userId);
@@ -99,7 +90,6 @@ exports.addCard = catchAsyncErrors(async (req, res) => {
         return res.status(404).json({ message: 'User not found' });
       }
   
-      // Push the new card to the user's creditCards array
       user.creditCards.push({
         cardNumber,
         expiryDate,
@@ -120,14 +110,13 @@ exports.addCard = catchAsyncErrors(async (req, res) => {
 
 exports.getUser = catchAsyncErrors(async (req, res) => {
     try {
-        const userId = req.user.id; // Assuming you have user data in req.user after authentication
-        const user = await User.findById(userId).populate('creditCards'); // Assuming you have a reference to credit cards in your user schema
+        const userId = req.user.id;
+        const user = await User.findById(userId).populate('creditCards')
                 
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
 
-        // Send user data along with credit cards
         return res.status(200).json({ user, creditCards: user.creditCards });
     } catch (error) {
         console.error("Error fetching user data:", error);
@@ -137,8 +126,8 @@ exports.getUser = catchAsyncErrors(async (req, res) => {
 
 
 // exports.updateCard = catchAsyncErrors(async (req, res) => {
-//     const { userId } = req.body; // Get userId from the request body
-//     const cardId = req.params.cardId; // Get the cardId from the request parameters
+//     const { userId } = req.bo
+//     const cardId = req.params.card
 
 //     try {
 //         const user = await userModel.findById(userId);
@@ -153,7 +142,7 @@ exports.getUser = catchAsyncErrors(async (req, res) => {
 //             return res.status(404).json({ message: 'Credit card not found' });
 //         }
 
-//         // Update card details
+//     
 //         user.creditCards[cardIndex] = { ...user.creditCards[cardIndex], ...req.body };
 //         await user.save();
 
