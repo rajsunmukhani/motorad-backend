@@ -80,10 +80,12 @@ exports.googleAuthCallback = catchAsyncErrors((req, res, next) => {
 
 exports.addCard = catchAsyncErrors(async (req, res) => {
     try {
-      const { cardNumber, expiryDate, cvv, nameOnCard, bankName } = req.body;
-  
-        const userId = req.user.id
-  
+      const { cardNumber, expiryDate, cvv, nameOnCard, bankName, limit, usedAmount } = req.body;
+
+      
+      
+      const userId = req.user.id
+      
       const user = await User.findById(userId);
   
       if (!user) {
@@ -96,7 +98,10 @@ exports.addCard = catchAsyncErrors(async (req, res) => {
         cvv,
         nameOnCard,
         bankName,
+        limit,
+        usedAmount
       });
+      
   
       await user.save();
       

@@ -48,8 +48,8 @@ const userSchema = mongoose.Schema({
                 cardNumber: {
                     type: String,
                     required: true,
-                    maxLength: [20, 'Card number should not exceed 16 digits'],
-                    minLength: [20, 'Card number should be 16 digits'],
+                    maxLength: [19, 'Card number should not exceed 19 characters'],
+                    minLength: [19, 'Card number should be 19 characters with spaces'],
                 },
                 cvv: {
                     type: String,
@@ -65,11 +65,20 @@ const userSchema = mongoose.Schema({
                     type: String,
                     required: true,
                 },
+                limit: {
+                    type: Number,
+                    required: true, 
+                },
+                usedAmount: {
+                    type: Number,
+                    required: true, 
+                    default: 0
+                },
             },
         ],
         validate: [arrayLimit, '{PATH} exceeds the limit of 5'],
         default: [],
-    },
+    },    
 }, { timestamps: true });
 
 function arrayLimit(val) {
