@@ -4,6 +4,8 @@ const User = require("../Model/User");
 const ErrorHandler = require("../utils/ErrorHandler");
 const { sendToken } = require("../utils/sendToken");
 const { sendOTPmail } = require("../utils/Nodemailer");
+const otpGenerator = require('otp-generator')
+const crypto = require('crypto'); // To generate random OTP
 
 exports.signup = async (req, res, next) => {
     try {
@@ -70,22 +72,16 @@ exports.googleAuthCallback = catchAsyncErrors((req, res, next) => {
             }
 
             const token = await user.genToken();
-
-
             return res.redirect(`http://localhost:5173/home/${token}`);
         });
     })(req, res, next);
 });
 
-
 exports.addCard = catchAsyncErrors(async (req, res) => {
     try {
       const { cardNumber, expiryDate, cvv, nameOnCard, bankName, limit, usedAmount } = req.body;
 
-      
-      
-      const userId = req.user.id
-      
+      const userId = req.user.id;
       const user = await User.findById(userId);
   
       if (!user) {
@@ -101,7 +97,6 @@ exports.addCard = catchAsyncErrors(async (req, res) => {
         limit,
         usedAmount
       });
-      
   
       await user.save();
       
@@ -112,11 +107,10 @@ exports.addCard = catchAsyncErrors(async (req, res) => {
     }
 });
 
-
 exports.getUser = catchAsyncErrors(async (req, res) => {
     try {
         const userId = req.user.id;
-        const user = await User.findById(userId).populate('creditCards')
+        const user = await User.findById(userId).populate('creditCards');
                 
         if (!user) {
             return res.status(404).json({ message: "User not found" });
@@ -129,26 +123,47 @@ exports.getUser = catchAsyncErrors(async (req, res) => {
     }
 });
 
-exports.sendOTP = catchAsyncErrors(async (req,res,next) => {
+// Generate and send OTP to the user's email
+exports.sendOTP = catchAsyncErrors(async (req, res, next) => {
     try {
-       sendOTPmail(req,res,next);
+        const { id } = req.user; // Get email from the request body
+
+        const user = await User.findById( id );
+        if (!user) {
+            return next(new ErrorHandler('User not found', 404));
+        }
+
+        // Generate a random 6-digit OTP
+        const otp = otpGenerator.generate(6, { 
+            digits: true,        
+            upperCaseAlphabets: false, 
+            specialChars: false,
+            lowerCaseAlphabets: false 
+        });
+
+        // Set expiration time (5 minutes)
+        user.otp = otp;
+        user.otpExpiresAt = Date.now() + 300000; // 5 minutes
+
+        await user.save(); // Save OTP and expiration time to user
+
+        // Send OTP email
+        await sendOTPmail(user.email, otp);
+        res.status(200).json({ success: true, message: 'OTP sent successfully.' });
     } catch (error) {
-        console.log(error);
+        console.error("Error sending OTP:", error);
+        return next(new ErrorHandler('Error sending OTP', 500));
     }
 });
 
-exports.verifyOTP = async (req, res, next) => {
+
+// Verify the OTP
+exports.verifyOTP = catchAsyncErrors(async (req, res, next) => {
     try {
         const { otp } = req.body; // OTP from frontend
         const userId = req.user.id || req.user;
 
-        const user = await userModel.findById(userId);
-        console.log({
-            user,
-            otp
-        });
-        
-
+        const user = await User.findById(userId);
         if (!user) {
             return next(new ErrorHandler('User not found', 404));
         }
@@ -156,9 +171,11 @@ exports.verifyOTP = async (req, res, next) => {
         // Check if OTP matches and is not expired
         if (user.otp === otp && user.otpExpiresAt > Date.now()) {
             // OTP is valid
-            res.status(200).json({ 
-                success : true
-            });
+            user.otp = undefined; // Clear the OTP after verification
+            user.otpExpiresAt = undefined; // Clear the expiration time
+            await user.save(); // Save the changes
+
+            return res.status(200).json({ success: true, message: 'OTP verified successfully.' });
         } else {
             // OTP is invalid or expired
             return next(new ErrorHandler('Invalid or expired OTP', 400));
@@ -166,11 +183,4 @@ exports.verifyOTP = async (req, res, next) => {
     } catch (err) {
         return next(new ErrorHandler(err.message, 500));
     }
-};
-
-
-
-
-
-
-
+});
