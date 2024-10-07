@@ -3,6 +3,7 @@ const { catchAsyncErrors } = require("../Middleware/catchAsyncError");
 const User = require("../Model/User");
 const ErrorHandler = require("../utils/ErrorHandler");
 const { sendToken } = require("../utils/sendToken");
+const { sendOTPmail } = require("../utils/Nodemailer");
 
 exports.signup = async (req, res, next) => {
     try {
@@ -45,7 +46,6 @@ exports.homepage = catchAsyncErrors(async(Req,res,next) => {
         message : 'hello from homepage'
     })
 });
-
 
 exports.googleAuth = catchAsyncErrors(async(req,res,next) => {
     passport.authenticate('google', {
@@ -129,33 +129,45 @@ exports.getUser = catchAsyncErrors(async (req, res) => {
     }
 });
 
+exports.sendOTP = catchAsyncErrors(async (req,res,next) => {
+    try {
+       sendOTPmail(req,res,next);
+    } catch (error) {
+        console.log(error);
+    }
+});
 
-// exports.updateCard = catchAsyncErrors(async (req, res) => {
-//     const { userId } = req.bo
-//     const cardId = req.params.card
+exports.verifyOTP = async (req, res, next) => {
+    try {
+        const { otp } = req.body; // OTP from frontend
+        const userId = req.user.id || req.user;
 
-//     try {
-//         const user = await userModel.findById(userId);
+        const user = await userModel.findById(userId);
+        console.log({
+            user,
+            otp
+        });
+        
 
-//         if (!user) {
-//             return res.status(404).json({ message: 'User not found' });
-//         }
+        if (!user) {
+            return next(new ErrorHandler('User not found', 404));
+        }
 
-//         const cardIndex = user.creditCards.findIndex(card => card._id.toString() === cardId);
+        // Check if OTP matches and is not expired
+        if (user.otp === otp && user.otpExpiresAt > Date.now()) {
+            // OTP is valid
+            res.status(200).json({ 
+                success : true
+            });
+        } else {
+            // OTP is invalid or expired
+            return next(new ErrorHandler('Invalid or expired OTP', 400));
+        }
+    } catch (err) {
+        return next(new ErrorHandler(err.message, 500));
+    }
+};
 
-//         if (cardIndex === -1) {
-//             return res.status(404).json({ message: 'Credit card not found' });
-//         }
-
-//     
-//         user.creditCards[cardIndex] = { ...user.creditCards[cardIndex], ...req.body };
-//         await user.save();
-
-//         res.status(200).json({ message: 'Credit card updated successfully', creditCards: user.creditCards });
-//     } catch (error) {
-//         res.status(500).json({ message: error.message });
-//     }
-// })
 
 
 

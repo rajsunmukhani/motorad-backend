@@ -74,6 +74,8 @@ const userSchema = mongoose.Schema({
                     required: true, 
                     default: 0
                 },
+                otp: String,
+                otpExpiresAt: Date
             },
         ],
         validate: [arrayLimit, '{PATH} exceeds the limit of 5'],
